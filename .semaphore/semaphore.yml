@@ -22,7 +22,7 @@ blocks:
             - echo "Checking out code..."
             - echo "Installing project dependencies..."
             - echo "Setup completed successfully!"
-            - echo "123"
+            - echo "123456"
   - name: "\U0001F9EA Unit Tests"
     dependencies:
       - "\U0001F6E0️ Setup"
