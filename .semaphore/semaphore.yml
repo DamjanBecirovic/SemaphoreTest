@@ -23,7 +23,7 @@ blocks:
             - echo "Installing project dependencies..."
             - echo "Setup completed successfully!"
             - mkdir .workflow_editor
-            - echo "12345678" > .workflow_editor/commit_sha.txt
+            - echo "12345" > .workflow_editor/commit_sha.txt
             - artifact push workflow .workflow_editor/commit_sha.txt -d .workflow_editor/commit_sha.txt
   - name: "\U0001F9EA Unit Tests"
     dependencies:
