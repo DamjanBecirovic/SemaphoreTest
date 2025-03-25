@@ -23,6 +23,7 @@ blocks:
             - echo "Installing dependencies..."
             - echo "Running test suite..."
             - echo "Tests completed successfully!"
+            - echo "new 1234"
   - name: "\U0001F680 Deploy"
     dependencies:
       - "\U0001F9EA Test"
