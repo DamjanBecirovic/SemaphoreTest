@@ -11,5 +11,6 @@ blocks:
         - name: 'Job #1'
           commands:
             - checkout
+            - echo "1234"
     run:
       when: change_in('/.semaphore')
