@@ -12,6 +12,5 @@ blocks:
           commands:
             - checkout
             - echo "1234"
-            - echo "5678"
     run:
       when: change_in('/.semaphore')
