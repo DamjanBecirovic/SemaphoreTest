@@ -1,0 +1,16 @@
+version: v1.0
+name: Pipeline 2
+agent:
+  machine:
+    type: ''
+    os_image: ''
+blocks:
+  - name: 'Block #1'
+    task:
+      jobs:
+        - name: 'Job #1'
+          commands:
+            - echo "job 1"
+promotions:
+  - name: Promotion 1
+    pipeline_file: pipeline_3.yml
