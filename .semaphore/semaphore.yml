@@ -20,10 +20,8 @@ blocks:
         - name: "\U0001F7E2 Run Tests"
           commands:
             - echo "Checking out code..."
-            - echo "Installing dependencies..."
-            - echo "Running test suite..."
-            - echo "Tests completed successfully!"
-            - echo "new 1234567"
+            - sleep 300
+            - echo "Done"
   - name: "\U0001F680 Deploy"
     dependencies:
       - "\U0001F9EA Test"
