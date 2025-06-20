@@ -22,6 +22,7 @@ blocks:
             - echo "Checking out code..."
             - sleep 300
             - echo "Done"
+            - echo "Test 123"
   - name: "\U0001F680 Deploy"
     dependencies:
       - "\U0001F9EA Test"
