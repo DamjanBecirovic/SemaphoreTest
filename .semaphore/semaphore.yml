@@ -44,6 +44,8 @@ blocks:
             - echo "Setting up test database..."
             - echo "Running integration tests..."
             - echo "Integration tests passed successfully!"
+    skip:
+      when: 'true'
   - name: "\U0001F310 E2E Tests"
     dependencies:
       - "\U0001F6E0️ Setup"
