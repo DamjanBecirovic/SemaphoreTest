@@ -11,11 +11,4 @@ blocks:
       jobs:
       - name: "Push outputs to SuperPlane"
         commands:
-          - export CHANGED_SERVICES="app1,app3"
-          - |
-            curl -s \
-              "https://app.superplane.com/api/v1/outputs" \
-              -X POST \
-              -H "Content-Type: application/json" \
-              -H "Authorization: Bearer $SEMAPHORE_OIDC_TOKEN" \
-              --data "{\"execution_id\":\"$SUPERPLANE_STAGE_EXECUTION_ID\",\"external_id\":\"$SEMAPHORE_WORKFLOW_ID\",\"outputs\":{\"CHANGED_SERVICES\":\"$CHANGED_SERVICES\"}}"
+          - for i in {1..500}; do echo "Log line $i"; done
