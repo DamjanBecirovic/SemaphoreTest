@@ -4,7 +4,7 @@ name: "Ceph cache testing pipeline"
 agent:
   machine:
     type: f1-standard-2
-    os_image: ubuntu2404
+    os_image: ubuntu2204
 
 blocks:
   - name: "Upload file to cache"
