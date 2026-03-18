@@ -1,36 +1,126 @@
 version: v1.0
-name: "\U0001F3AF Simple CI Pipeline"
+name: "Ceph cache testing pipeline"
+
 agent:
   machine:
     type: f1-standard-2
-    os_image: ubuntu2004
-fail_fast:
-  stop:
-    when: branch != 'main'
-auto_cancel:
-  running:
-    when: branch != 'main'
-  queued:
-    when: branch = 'main'
+    os_image: ubuntu2404
+
 blocks:
-  - name: "\U0001F9EA Test"
+  - name: "Upload file to cache"
     dependencies: []
     task:
       jobs:
-        - name: "\U0001F7E2 Run Tests"
+        - name: "Cache store"
           commands:
-            - echo "Checking out code..."
-            - sleep 300
-            - echo "Done"
-            - echo "Test 123"
-  - name: "\U0001F680 Deploy"
+            - checkout
+            - mkdir -p cache_payload metrics
+            - dd if=/dev/urandom of=cache_payload/test-32mb.bin bs=1M count=32 status=none
+            - sha256sum cache_payload/test-32mb.bin | tee cache_payload/test-32mb.sha256
+            - ls -lh cache_payload
+
+            - START_MS=$(date +%s%3N)
+            - cache store ceph-cache-test-v1 cache_payload
+            - END_MS=$(date +%s%3N)
+            - DURATION_MS=$((END_MS - START_MS))
+            - DURATION_SEC=$(awk "BEGIN {printf \"%.3f\", ${DURATION_MS}/1000}")
+
+            - printf "store,0,%s,%s\n" "$DURATION_MS" "$DURATION_SEC" > metrics/store.tsv
+            - artifact push workflow metrics/store.tsv
+
+            - |
+              cat > store-report.md <<EOF
+              # Cache Store Job Report
+
+              - Operation: \`cache store\`
+              - Key: \`ceph-cache-test-v1\`
+              - File: \`cache_payload/test-32mb.bin\` (32 MB)
+              - Duration: **${DURATION_MS} ms** (${DURATION_SEC}s)
+              EOF
+
+            - test-results command-metrics store-report.md
+            - artifact push job -d .semaphore/REPORT.md store-report.md
+
+  - name: "Parallel cache restore"
     dependencies:
-      - "\U0001F9EA Test"
+      - "Upload file to cache"
     task:
       jobs:
-        - name: "\U0001F4E6 Deploy to Production"
+        - name: "Cache restore"
+          parallelism: 5
           commands:
-            - echo "Building application..."
-            - echo "Running security checks..."
-            - echo "Deploying to production..."
-            - echo "Deployment completed successfully!"
+            - checkout
+            - mkdir -p metrics
+
+            - START_MS=$(date +%s%3N)
+            - cache restore ceph-cache-test-v1
+            - END_MS=$(date +%s%3N)
+            - DURATION_MS=$((END_MS - START_MS))
+            - DURATION_SEC=$(awk "BEGIN {printf \"%.3f\", ${DURATION_MS}/1000}")
+
+            - test -f cache_payload/test-32mb.bin
+            - sha256sum -c cache_payload/test-32mb.sha256
+            - ls -lh cache_payload/test-32mb.bin
+
+            - IDX="${SEMAPHORE_JOB_INDEX:-0}"
+            - printf "restore,%s,%s,%s\n" "$IDX" "$DURATION_MS" "$DURATION_SEC" > "metrics/restore-${IDX}.tsv"
+            - artifact push workflow "metrics/restore-${IDX}.tsv"
+
+            - |
+              cat > restore-report.md <<EOF
+              # Cache Restore Job Report
+
+              - Operation: \`cache restore\`
+              - Key: \`ceph-cache-test-v1\`
+              - Job Index: \`${IDX}\`
+              - Duration: **${DURATION_MS} ms** (${DURATION_SEC}s)
+              EOF
+
+            - test-results command-metrics restore-report.md
+            - artifact push job -d .semaphore/REPORT.md restore-report.md
+
+after_pipeline:
+  task:
+    jobs:
+      - name: "Generate workflow markdown report"
+        commands:
+          - artifact pull workflow metrics
+          - test -d metrics
+
+          - |
+            awk -F',' '
+              BEGIN {
+                count=0; sum=0; min=-1; max=0;
+                print "# Ceph Cache Performance Report";
+                print "";
+                print "| Operation | Job Index | Duration (ms) | Duration (s) |";
+                print "|---|---:|---:|---:|";
+              }
+              {
+                op=$1; idx=$2; ms=$3; sec=$4;
+                printf("| %s | %s | %s | %s |\n", op, idx, ms, sec);
+
+                if (op=="restore") {
+                  count++; sum+=ms;
+                  if (min==-1 || ms<min) min=ms;
+                  if (ms>max) max=ms;
+                } else if (op=="store") {
+                  store_ms=ms; store_sec=sec;
+                }
+              }
+              END {
+                print "";
+                printf("- Store duration: **%s ms** (%ss)\n", store_ms, store_sec);
+                if (count>0) {
+                  avg=sum/count;
+                  printf("- Restore jobs: **%d**\n", count);
+                  printf("- Restore avg: **%.2f ms**\n", avg);
+                  printf("- Restore min: **%d ms**\n", min);
+                  printf("- Restore max: **%d ms**\n", max);
+                }
+              }
+            ' metrics/*.tsv > WORKFLOW_REPORT.md
+
+          - artifact push workflow -d .semaphore/REPORT.md WORKFLOW_REPORT.md
+
+
