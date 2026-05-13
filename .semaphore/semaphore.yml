@@ -3,7 +3,7 @@ name: "\U0001F3AF Simple CI Pipeline"
 agent:
   machine:
     type: f1-standard-2
-    os_image: ubuntu2004
+    os_image: ubuntu2204
 fail_fast:
   stop:
     when: branch != 'main'
@@ -20,7 +20,7 @@ blocks:
         - name: "\U0001F7E2 Run Tests"
           commands:
             - echo "Checking out code..."
-            - sleep 300
+            - sleep 60
             - echo "Done"
             - echo "Test 123"
   - name: "\U0001F680 Deploy"
